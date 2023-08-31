@@ -22,7 +22,7 @@ var delete_options = {
 		tweets_from_accounts_to_ignore: tweets from accounts in this list will not be unliked.
 		give their @ username without the '@'
 	*/
-	"tweets_from_accounts_to_ignore": [
+	"tweets_from_accounts_to_ignore": [ // THIS DOES NOT WORK CURRENTLY
 		'randomuser123',
 		'notsorandomuser321'
 	]
@@ -98,8 +98,8 @@ async function fetch_likes(cursor, retry = 0) {
 
 	if (!response.ok) {
 		if (response.status === 429) {
-			console.log("Rate limit reached. Waiting 1 minute")
-			await sleep(1000 * 60);
+			console.log("Rate limit reached. Waiting 3 minutes. It should work after 2-4 retries(6-12 minutes). If it doesn't, F5 to stop the script and retry in an hour")
+			await sleep(1000 * 60 * 3); // 3 minutes
 			return fetch_likes(cursor, retry + 1)
 		}
 		if (retry == 5) {
@@ -141,26 +141,15 @@ function check_filter(tweet) {
 		&& ( delete_options["tweets_to_ignore"].includes(tweet['legacy']["id_str"]) || delete_options["tweets_to_ignore"].includes( parseInt(tweet['legacy']["id_str"]) ) )) {
 		return false
 	}
-	try {
-		for (let user of delete_options['tweets_from_accounts_to_ignore']) {
-			if (tweet['core']['user_results']['result']['legacy']['screen_name'].toLowerCase() == user.toLowerCase()) {
-				return false
-			}
+	for (let user of delete_options['tweets_from_accounts_to_ignore']) {
+		if (tweet['legacy'].hasOwnProperty('screen_name') && tweet['legacy']['screen_name'].toLowerCase() == user.toLowerCase()) {
+			return false
 		}
-	} catch (error) {
-		console.error("(check_filter | #1) please report this error on github", error, tweet);
+		else if (tweet.hasOwnProperty('core') && tweet['core']['user_results']['result']['legacy']['screen_name'].toLowerCase() == user.toLowerCase()) {
+			return false
+		}
 	}
 	return true
-}
-
-function check_tweet_owner(obj, uid) {
-	if (obj.hasOwnProperty('legacy') && obj['legacy'].hasOwnProperty('retweeted') && obj['legacy']['retweeted'] === true && delete_options["unretweet"] == false)
-		return false
-	if (obj.hasOwnProperty('user_id_str') && obj['user_id_str'] === uid)
-		return true;
-	else if (obj.hasOwnProperty('legacy') && obj['legacy'].hasOwnProperty('user_id_str') && obj['legacy']['user_id_str'] === uid)
-		return true;
-	return false
 }
 
 function tweetFound(obj) {
@@ -179,7 +168,7 @@ function findTweetIds(obj) {
 		// 	tweetFound(currentObj['tweet'])
 		// }
 
-		if (currentObj.hasOwnProperty('__typename') && currentObj['__typename'] === 'Tweet' && currentObj.hasOwnProperty('legacy')
+		if (((currentObj.hasOwnProperty('__typename') && currentObj['__typename'] === 'Tweet') || currentObj.hasOwnProperty('rest_id')) && currentObj.hasOwnProperty('legacy')
 			&& check_filter(currentObj) && currentObj['legacy']['favorited'] == true) {
 			tweets_to_unlike.push(currentObj['id_str'] || currentObj['legacy']['id_str']);
 			tweetFound(currentObj)
@@ -229,8 +218,8 @@ async function unlike_tweets(id_list) {
 		});
 		if (!response.ok) {
 			if (response.status === 429) {
-				console.log("Rate limit reached. Waiting 1 minute")
-				await sleep(1000 * 60);
+				console.log("Rate limit reached. Waiting 3 minutes. It should work after 2-4 retries(6-12 minutes). If it doesn't, F5 to stop the script and retry in an hour")
+				await sleep(1000 * 60 * 3); // 3 minutes
 				i -= 1;
 				continue
 			}
