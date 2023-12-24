@@ -9,6 +9,10 @@ var user_id = getCookie("twid").substring(4);
 var username = "YourUsernameHere" // replace with your username
 var delete_options = {
 	/*
+		force_unlike : test
+	*/
+	"force_unlike":false,
+	/*
 		tweets_to_ignore : give all the tweet ids that you want to keep.
 		To find the id of the tweet, click on it, then copy the number you find in the url
 		it looks like that : https://twitter.com/USERNAME/status/1695001000000000, the id here is 1695001000000000
@@ -169,9 +173,13 @@ function findTweetIds(obj) {
 		// }
 
 		if (((currentObj.hasOwnProperty('__typename') && currentObj['__typename'] === 'Tweet') || currentObj.hasOwnProperty('rest_id')) && currentObj.hasOwnProperty('legacy')
-			&& check_filter(currentObj) && currentObj['legacy']['favorited'] == true) {
-			tweets_to_unlike.push(currentObj['id_str'] || currentObj['legacy']['id_str']);
-			tweetFound(currentObj)
+			&& check_filter(currentObj)) {
+			if (delete_options["force_unlike"] == false && currentObj['legacy']['favorited'] == false)
+				;
+			else {
+				tweets_to_unlike.push(currentObj['id_str'] || currentObj['legacy']['id_str']);
+				tweetFound(currentObj)
+			}
 		}
 
 		for (let key in currentObj) {
